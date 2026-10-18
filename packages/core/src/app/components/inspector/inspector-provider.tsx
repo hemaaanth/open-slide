@@ -1220,6 +1220,12 @@ export function InspectorProvider({
     };
 
     let observer: MutationObserver | null = null;
+    const replayOptions: MutationObserverInit = {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-slide-loc', 'data-slide-delete'],
+    };
     const replayAll = () => {
       if (pendingRef.current.size === 0) return;
       observer?.disconnect();
@@ -1267,22 +1273,12 @@ export function InspectorProvider({
         }
       }
       root.querySelectorAll<HTMLElement>('[data-slide-loc]').forEach(applyBuffered);
-      observer?.observe(root, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['data-slide-loc', 'data-slide-delete'],
-      });
+      observer?.observe(root, replayOptions);
     };
 
     replayAll();
     observer = new MutationObserver(replayAll);
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-slide-loc'],
-    });
+    observer.observe(root, replayOptions);
     return () => observer?.disconnect();
   }, [pageIndex, slideId]);
 

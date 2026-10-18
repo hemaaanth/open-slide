@@ -383,8 +383,10 @@ export function useVisualEditor({
           canvas.root.querySelectorAll(`[data-slide-loc="${target.line}:${target.column}"]`)
             .length !== 1,
       )
-    )
+    ) {
+      toast.error(t.inspector.removeBlocked);
       return false;
+    }
     bufferBatch(
       targets.map((target) => ({
         ...target,
@@ -393,7 +395,7 @@ export function useVisualEditor({
     );
     setSelection([]);
     return true;
-  }, [selection, committing, bufferBatch, setSelection]);
+  }, [selection, committing, bufferBatch, setSelection, t.inspector.removeBlocked]);
 
   useEffect(() => {
     if (!active || inlineEditing || committing) return;
@@ -456,7 +458,8 @@ export function useVisualEditor({
       arrange,
       selectParent,
       selectAll,
+      removeSelected,
     }),
-    [snapping, align, distribute, setFrame, arrange, selectParent, selectAll],
+    [snapping, align, distribute, setFrame, arrange, selectParent, selectAll, removeSelected],
   );
 }

@@ -65,6 +65,23 @@ test.describe('remove selected elements', () => {
     });
   }
 
+  test('the Remove button removes the selected JSX child after Save', async ({ page, request }) => {
+    const slideId = 'remove-button';
+    await openEditable(page, request, slideId);
+    const headline = editorCanvas(page).getByText('Editable headline', { exact: true });
+    const body = editorCanvas(page).getByText('Editable body copy', { exact: true });
+    const source = await readSlideSource(slideId);
+    await headline.click();
+    const panel = page.locator('aside[data-inspector-ui]');
+    await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
+    await panel.getByRole('button', { name: 'Remove', exact: true }).click();
+    await expect(headline).toBeHidden();
+    await expect(body).toBeVisible();
+    expect(await readSlideSource(slideId)).toBe(source);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(() => readSlideSource(slideId)).not.toContain('<h1');
+  });
+
   test('removes independent selections together and keeps the page root', async ({
     page,
     request,
@@ -289,10 +306,16 @@ export default [Only] satisfies Page[];
     const shared = editorCanvas(page).getByText('Shared body').first();
     await expect(root).not.toHaveAttribute('data-slide-delete', /./);
     await expect(shared).not.toHaveAttribute('data-slide-delete', /./);
+    const blocked = page.getByText("This element can't be removed.", { exact: false });
+    const panel = page.locator('aside[data-inspector-ui]');
     for (const target of [root, shared]) {
       await target.click();
       await page.keyboard.press('Backspace');
       await page.keyboard.press('Delete');
+      await expect(target).toBeVisible();
+      await expect(blocked.first()).toBeVisible();
+      await panel.getByRole('tab', { name: 'Arrange', exact: true }).click();
+      await panel.getByRole('button', { name: 'Remove', exact: true }).click();
       await expect(target).toBeVisible();
     }
     expect(await readSlideSource(slideId)).toBe(source);
