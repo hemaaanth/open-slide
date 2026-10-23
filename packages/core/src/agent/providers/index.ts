@@ -8,11 +8,11 @@ import { createCodexProvider } from './codex.ts';
 export function createProviders(
   configured: OpenSlideAcpProviderConfig[] = [],
   coreVersion = '0.0.0',
+  builtins = true,
 ): Record<AgentProviderId, AgentProvider> {
-  const providers: Record<AgentProviderId, AgentProvider> = {
-    claude: createClaudeProvider(),
-    codex: createCodexProvider(),
-  };
+  const providers: Record<AgentProviderId, AgentProvider> = builtins
+    ? { claude: createClaudeProvider(), codex: createCodexProvider() }
+    : {};
   for (const config of configured) {
     if (
       config.type !== 'acp' ||

@@ -88,6 +88,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         coreVersion: CORE_VERSION,
         agentEnabled: config.agent?.enabled ?? true,
         agentProviders: config.agent?.providers,
+        agentBuiltinProviders: config.agent?.builtinProviders,
       }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),

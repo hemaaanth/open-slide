@@ -171,7 +171,11 @@ function parseTurnSettings(raw: Record<string, unknown>): TurnSettings {
 const AGENT_BODY_LIMIT = 1024 * 1024;
 
 export function registerAgentRoutes(server: ViteDevServer, ctx: ApiContext): void {
-  const providers = createProviders(ctx.agentProviders, ctx.coreVersion);
+  const providers = createProviders(
+    ctx.agentProviders,
+    ctx.coreVersion,
+    ctx.agentBuiltinProviders ?? true,
+  );
   const store = createSessionStore({
     file: path.join(ctx.userCwd, 'node_modules', '.open-slide', 'agent-sessions.json'),
   });

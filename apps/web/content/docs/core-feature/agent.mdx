@@ -70,6 +70,10 @@ const config: OpenSlideConfig = {
 export default config;
 ```
 
+Set `builtinProviders: false` in `agent` to offer only your configured ACP
+agents, for example on a shared server where Claude Code and Codex are not
+signed in.
+
 The panel maps ACP message chunks, plans, tool calls, permission requests and
 cancellation to its existing transcript controls. It reloads persisted native
 sessions when the agent advertises `loadSession`; otherwise a follow-up starts
