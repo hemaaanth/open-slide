@@ -8,6 +8,15 @@ export type OpenSlideBuildConfig = {
 
 export type OpenSlideAgentConfig = {
   enabled?: boolean;
+  providers?: OpenSlideAcpProviderConfig[];
+};
+
+export type OpenSlideAcpProviderConfig = {
+  id: string;
+  name: string;
+  type: 'acp';
+  command: string;
+  args?: string[];
 };
 
 export type OpenSlideConfig = {

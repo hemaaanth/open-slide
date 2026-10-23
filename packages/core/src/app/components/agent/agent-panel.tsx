@@ -435,12 +435,14 @@ function ModelMenu({
         {shown && !shown.ready ? (
           <div className="flex flex-col items-start gap-2 px-2 py-2.5">
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              {shown.cliFound
-                ? format(t.agent.connectInstallHint, {
-                    pkg: shown.sdkPackage,
-                    pm: status?.packageManager ?? 'npm',
-                  })
-                : format(t.agent.cliHint, { name: shown.name })}
+              {shown.type === 'acp'
+                ? format(t.agent.acpMissing, { command: shown.cliCommand })
+                : shown.cliFound
+                  ? format(t.agent.connectInstallHint, {
+                      pkg: shown.sdkPackage,
+                      pm: status?.packageManager ?? 'npm',
+                    })
+                  : format(t.agent.cliHint, { name: shown.name })}
             </p>
             <Button
               size="xs"
