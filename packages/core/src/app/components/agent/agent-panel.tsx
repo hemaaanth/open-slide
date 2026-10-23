@@ -384,6 +384,10 @@ function ModelMenu({
   const choice = shown?.ready ? resolveModelChoice(shown.models, modelChoices[shown.id]) : null;
   const selectedModel = shown?.id === providerId ? (model ?? choice?.model) : choice?.model;
   const selectedEffort = shown?.id === providerId ? effort : (choice?.effort ?? null);
+  const showModels = !!shown?.ready && (shown.models.length > 1 || !!shown.models[0]?.id);
+  const showEfforts = !!shown?.ready && !!selectedModel && selectedModel.efforts.length > 0;
+  // Draw a divider only below a section that is actually there.
+  const choicesAbove = providers.length > 1 || (!!shown && !shown.ready) || showModels;
 
   return (
     <Popover
@@ -459,7 +463,7 @@ function ModelMenu({
               {t.agent.connect}
             </Button>
           </div>
-        ) : shown && (shown.models.length > 1 || shown.models[0]?.id) ? (
+        ) : shown && showModels ? (
           <div className="flex flex-col gap-px">
             {shown.models.map((m) => {
               const checked = m.id === selectedModel?.id;
@@ -487,8 +491,8 @@ function ModelMenu({
           </div>
         ) : null}
 
-        {shown?.ready && selectedModel && selectedModel.efforts.length > 0 && (
-          <div className="mt-1.5 border-t border-hairline first:mt-0 first:border-t-0 first:pt-0 px-1 pt-2 pb-1">
+        {shown && selectedModel && showEfforts && (
+          <div className={cn('px-1 pb-1', choicesAbove && 'mt-1.5 border-t border-hairline pt-2')}>
             <div className="mb-1.5 px-1 text-[11px] font-medium text-muted-foreground">
               {t.agent.reasoning}
             </div>
@@ -514,7 +518,12 @@ function ModelMenu({
           </div>
         )}
 
-        <div className="mt-1.5 flex flex-col gap-px border-t border-hairline first:mt-0 first:border-t-0 first:pt-0 pt-1.5">
+        <div
+          className={cn(
+            'flex flex-col gap-px',
+            (choicesAbove || showEfforts) && 'mt-1.5 border-t border-hairline pt-1.5',
+          )}
+        >
           {readyProviders(status).length > 0 && (
             <button
               type="button"
