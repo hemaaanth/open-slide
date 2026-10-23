@@ -402,7 +402,11 @@ function ModelMenu({
         ) : (
           <span aria-hidden className="size-1.5 rounded-full bg-muted-foreground/50" />
         )}
-        <span className="truncate">{model ? modelLabel(model, t) : t.agent.title}</span>
+        <span className="truncate">
+          {model?.id
+            ? model.label
+            : (providers.find((p) => p.id === providerId)?.name ?? t.agent.title)}
+        </span>
         {effort && (
           <span className="shrink-0 font-normal text-muted-foreground">
             {t.agent.efforts[effort]}
@@ -421,12 +425,12 @@ function ModelMenu({
                 aria-selected={p.id === shownId}
                 onClick={() => setTab(p.id)}
                 className={cn(
-                  'flex h-7 flex-1 items-center justify-center gap-1.5 rounded-[5px] text-[12px] font-medium text-muted-foreground outline-none transition-colors duration-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30',
+                  'flex h-7 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[5px] px-1.5 text-[12px] font-medium text-muted-foreground outline-none transition-colors duration-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30',
                   p.id === shownId && 'bg-background text-foreground shadow-edge',
                 )}
               >
                 <ProviderLogo provider={p.id} className="size-3.5 shrink-0" />
-                {p.name}
+                <span className="truncate">{p.name}</span>
               </button>
             ))}
           </div>
@@ -455,7 +459,7 @@ function ModelMenu({
               {t.agent.connect}
             </Button>
           </div>
-        ) : shown ? (
+        ) : shown && (shown.models.length > 1 || shown.models[0]?.id) ? (
           <div className="flex flex-col gap-px">
             {shown.models.map((m) => {
               const checked = m.id === selectedModel?.id;
@@ -484,7 +488,7 @@ function ModelMenu({
         ) : null}
 
         {shown?.ready && selectedModel && selectedModel.efforts.length > 0 && (
-          <div className="mt-1.5 border-t border-hairline px-1 pt-2 pb-1">
+          <div className="mt-1.5 border-t border-hairline first:mt-0 first:border-t-0 first:pt-0 px-1 pt-2 pb-1">
             <div className="mb-1.5 px-1 text-[11px] font-medium text-muted-foreground">
               {t.agent.reasoning}
             </div>
@@ -510,7 +514,7 @@ function ModelMenu({
           </div>
         )}
 
-        <div className="mt-1.5 flex flex-col gap-px border-t border-hairline pt-1.5">
+        <div className="mt-1.5 flex flex-col gap-px border-t border-hairline first:mt-0 first:border-t-0 first:pt-0 pt-1.5">
           {readyProviders(status).length > 0 && (
             <button
               type="button"

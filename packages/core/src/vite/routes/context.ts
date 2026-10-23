@@ -15,6 +15,7 @@ export type ApiContext = {
   coreVersion: string;
   agentEnabled: boolean;
   agentProviders?: OpenSlideAcpProviderConfig[];
+  agentBuiltinProviders?: boolean;
 };
 
 export type ApiPluginOptions = {
@@ -24,6 +25,7 @@ export type ApiPluginOptions = {
   coreVersion: string;
   agentEnabled: boolean;
   agentProviders?: OpenSlideAcpProviderConfig[];
+  agentBuiltinProviders?: boolean;
 };
 
 export function makeContext(opts: ApiPluginOptions): ApiContext {
@@ -42,6 +44,7 @@ export function makeContext(opts: ApiPluginOptions): ApiContext {
     coreVersion: opts.coreVersion,
     agentEnabled: opts.agentEnabled,
     agentProviders: opts.agentProviders,
+    agentBuiltinProviders: opts.agentBuiltinProviders,
   };
 }
 
