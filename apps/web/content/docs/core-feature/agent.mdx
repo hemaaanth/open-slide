@@ -57,11 +57,11 @@ const config: OpenSlideConfig = {
   agent: {
     providers: [
       {
-        id: 'deckmaster',
-        name: 'Deckmaster',
+        id: 'my-agent',
+        name: 'My Agent',
         type: 'acp',
-        command: 'node',
-        args: ['scripts/deckmaster-relay.mjs'],
+        command: 'my-agent',
+        args: ['--acp'],
       },
     ],
   },

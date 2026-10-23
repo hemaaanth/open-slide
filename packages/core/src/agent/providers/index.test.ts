@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createProviders } from './index.ts';
 
-const deckmaster = { id: 'deckmaster', name: 'Deckmaster', type: 'acp' as const, command: 'node' };
+const custom = { id: 'my-agent', name: 'My Agent', type: 'acp' as const, command: 'my-agent' };
 
 describe('createProviders', () => {
   it('offers the built-in providers next to configured ACP agents', () => {
-    expect(Object.keys(createProviders([deckmaster]))).toEqual(['claude', 'codex', 'deckmaster']);
+    expect(Object.keys(createProviders([custom]))).toEqual(['claude', 'codex', 'my-agent']);
   });
 
   it('offers only configured ACP agents when built-ins are off', () => {
-    expect(Object.keys(createProviders([deckmaster], '1.0.0', false))).toEqual(['deckmaster']);
+    expect(Object.keys(createProviders([custom], '1.0.0', false))).toEqual(['my-agent']);
   });
 });
