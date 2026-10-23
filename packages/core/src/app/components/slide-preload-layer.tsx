@@ -6,6 +6,9 @@ import { type StepController, StepHost } from '../lib/step-context';
 
 const PAGES_PER_FRAME = 2;
 const SETTLE_TIMEOUT_MS = 15_000;
+// Browsers pause requestAnimationFrame in background and occluded tabs. A
+// timer keeps the warm-up moving there (throttled, but it still fires).
+const FRAME_FALLBACK_MS = 100;
 
 type Props = {
   pages: Page[];
@@ -28,8 +31,27 @@ export function markDeckWarmed(slideId: string): void {
   warmedDecks.add(slideId);
 }
 
+// Runs `cb` on the next frame, or after FRAME_FALLBACK_MS if no frame comes.
+function onNextFrame(cb: () => void): () => void {
+  let fired = false;
+  const run = () => {
+    if (fired) return;
+    fired = true;
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    cb();
+  };
+  const raf = requestAnimationFrame(run);
+  const timer = setTimeout(run, FRAME_FALLBACK_MS);
+  return () => {
+    fired = true;
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+  };
+}
+
 function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise((resolve) => onNextFrame(resolve));
 }
 
 function waitForImages(root: HTMLElement): Promise<unknown> {
@@ -102,12 +124,20 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
     if (done) onDoneRef.current?.();
   }, [done]);
 
+  // One deadline for the whole warm-up, counted from mount, so a slow mount
+  // phase can't push it back. A new deck restarts it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `deck` restarts the deadline
+  useEffect(() => {
+    if (done) return;
+    const timer = setTimeout(() => setDone(true), SETTLE_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [deck, done]);
+
   useEffect(() => {
     if (done || mountedCount >= order.length) return;
-    const raf = requestAnimationFrame(() => {
+    return onNextFrame(() => {
       setMountedCount((n) => Math.min(order.length, n + PAGES_PER_FRAME));
     });
-    return () => cancelAnimationFrame(raf);
   }, [done, mountedCount, order.length]);
 
   useEffect(() => {
@@ -124,8 +154,7 @@ export function SlidePreloadLayer({ pages, index, design, includeCurrent = false
         root ? waitForImages(root) : Promise.resolve(),
       ]);
     };
-    const timeout = new Promise<void>((resolve) => setTimeout(resolve, SETTLE_TIMEOUT_MS));
-    Promise.race([settle(), timeout]).then(() => {
+    settle().then(() => {
       if (!cancelled) setDone(true);
     });
     return () => {

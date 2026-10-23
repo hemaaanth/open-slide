@@ -113,6 +113,28 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'next-themes',
         'react-router-dom',
         '@base-ui/react',
+        // Subpath imports are separate entries to the optimizer. List the ones
+        // the app uses so they are bundled on startup, not one file at a time.
+        '@base-ui/react/button',
+        '@base-ui/react/context-menu',
+        '@base-ui/react/dialog',
+        '@base-ui/react/menu',
+        '@base-ui/react/merge-props',
+        '@base-ui/react/popover',
+        '@base-ui/react/progress',
+        '@base-ui/react/scroll-area',
+        '@base-ui/react/select',
+        '@base-ui/react/separator',
+        '@base-ui/react/slider',
+        '@base-ui/react/tabs',
+        '@base-ui/react/toggle',
+        '@base-ui/react/toggle-group',
+        '@base-ui/react/tooltip',
+        '@base-ui/react/use-render',
+        // Slides import the SDK, but they load through a virtual module the
+        // scanner can't follow. Without this the first deck open finds it
+        // late, re-bundles, and forces a full page reload.
+        '@open-slide/core',
         // @base-ui/utils reaches for the CommonJS use-sync-external-store shim
         // (React 17 fallback). Left un-optimized, its named `useSyncExternalStore`
         // export fails ESM interop in the browser — pre-bundle it to fix that.
