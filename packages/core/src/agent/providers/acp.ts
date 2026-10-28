@@ -24,11 +24,7 @@ type PendingRequest = {
 };
 
 const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
-
-function escapeCmdCommand(command: string) {
-  if (command.includes(' ')) return `"${command}"`;
-  return command.replace(CMD_META_CHARS, '^$1');
-}
+const WINDOWS_SHIM_ENV = 'OPEN_SLIDE_ACP_COMMAND';
 
 function escapeCmdArgument(argument: string) {
   let escaped = argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1');
@@ -36,11 +32,17 @@ function escapeCmdArgument(argument: string) {
   return escaped.replace(CMD_META_CHARS, '^$1');
 }
 
-export function windowsShimCommand(command: string, args: string[], comspec = 'cmd.exe') {
-  const commandLine = [escapeCmdCommand(command), ...args.map(escapeCmdArgument)].join(' ');
+export function windowsShimCommand(
+  command: string,
+  args: string[],
+  comspec = 'cmd.exe',
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const commandLine = [`"%${WINDOWS_SHIM_ENV}%"`, ...args.map(escapeCmdArgument)].join(' ');
   return {
     command: comspec,
     args: ['/d', '/s', '/c', `"${commandLine}"`],
+    env: { ...env, [WINDOWS_SHIM_ENV]: command },
   };
 }
 
@@ -68,6 +70,7 @@ export function createAcpProvider(
         : { command: resolvedCommand, args: config.args ?? [] };
       const child = spawn(childCommand.command, childCommand.args, {
         cwd: opts.cwd,
+        env: 'env' in childCommand ? childCommand.env : process.env,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsVerbatimArguments: isWindowsShim,
         windowsHide: true,

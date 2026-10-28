@@ -125,17 +125,22 @@ afterEach(async () => {
 describe('ACP provider', () => {
   it('quotes Windows command shims without exposing arguments to cmd.exe', () => {
     expect(
-      windowsShimCommand('C:\\Program Files\\agent.cmd', ['--name', 'A&B', '100%', 'say "hi"']),
+      windowsShimCommand(
+        'C:\\Program Files\\100%TEMP%\\agent.cmd',
+        ['--name', 'A&B', '100%', 'say "hi"'],
+        'cmd.exe',
+        {},
+      ),
     ).toEqual({
       command: 'cmd.exe',
       args: [
         '/d',
         '/s',
         '/c',
-        '""C:\\Program Files\\agent.cmd" ^^^"--name^^^" ^^^"A^^^&B^^^" ^^^"100^^^%^^^" ^^^"say^^^ \\^^^"hi\\^^^"^^^""',
+        '""%OPEN_SLIDE_ACP_COMMAND%" ^^^"--name^^^" ^^^"A^^^&B^^^" ^^^"100^^^%^^^" ^^^"say^^^ \\^^^"hi\\^^^"^^^""',
       ],
+      env: { OPEN_SLIDE_ACP_COMMAND: 'C:\\Program Files\\100%TEMP%\\agent.cmd' },
     });
-    expect(windowsShimCommand('C:\\bin\\agent.cmd', []).args[3]).toBe('"C:\\bin\\agent.cmd"');
   });
 
   it('maps messages, plans, tools and permission requests into panel events', async () => {

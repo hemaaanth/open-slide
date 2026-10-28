@@ -32,13 +32,17 @@ ACP agents use JSON-RPC 2.0 over stdio and require no SDK.
 ## Connect
 
 Press `A` on any slide, or click **Agent** in the toolbar. The first time the
-panel opens, it connects every agent whose CLI is on your `PATH`: the dev
-server runs `pnpm add -D <sdk>` (or your package manager's equivalent) and the
-panel switches to chat as soon as the install finishes. Sign in to the CLI
-once (`claude` or `codex login`); the panel reuses that login.
+panel opens, it connects each enabled built-in provider whose CLI is on your
+`PATH`: the dev server runs `pnpm add -D <sdk>` (or your package manager's
+equivalent) and the panel switches to chat as soon as the install finishes.
+Sign in to the CLI once (`claude` or `codex login`); the panel reuses that
+login.
 
-If neither CLI is installed, the panel shows the install command for each and
-a **Check again** button instead.
+If a required built-in CLI is not installed, the panel shows its install
+command and a **Check again** button instead. Configured ACP agents require no
+SDK installation or CLI sign-in. A ready ACP agent is available immediately;
+the panel selects it automatically when it is preferred or is the first ready
+provider.
 
 Connected agents appear in the model menu in the panel header. It lists Opus,
 Sonnet and Haiku for Claude Code, the models your Codex CLI offers, and one
