@@ -48,7 +48,8 @@ default entry for each ACP agent. Set `agent: { enabled: false }` in
 ### Configure an ACP agent
 
 Add any ACP-compatible command to `open-slide.config.ts`. The command runs
-without a shell, with the workspace root as its working directory.
+without a shell, with the workspace root as its working directory. On Windows,
+`.cmd` and `.bat` shims are the exception and run through `cmd.exe`.
 
 ```ts title="open-slide.config.ts"
 import type { OpenSlideConfig } from '@open-slide/core';

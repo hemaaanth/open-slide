@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ProviderEvent, ProviderRunOptions } from '../provider.ts';
-import { createAcpProvider } from './acp.ts';
+import { createAcpProvider, windowsShimCommand } from './acp.ts';
 
 const tempDirs: string[] = [];
 
@@ -22,6 +22,10 @@ lines.on('line', (line) => {
   } else if (message.method === 'session/new') {
     send({ id: message.id, result: { sessionId: activeSession } });
   } else if (message.method === 'session/load') {
+    if (message.params.sessionId === 'rejected-session') {
+      send({ id: message.id, error: { code: -32000, message: 'Unknown session' } });
+      return;
+    }
     activeSession = message.params.sessionId;
     send({ method: 'session/update', params: { sessionId: activeSession, update: {
       sessionUpdate: 'agent_message_chunk', messageId: 'replay', content: { type: 'text', text: 'old reply' }
@@ -31,6 +35,12 @@ lines.on('line', (line) => {
     promptRequest = message.id;
     const text = message.params.prompt[0].text;
     if (text.includes('WAIT')) return;
+    if (text.includes('MALFORMED')) {
+      send({ method: 'session/update', params: { sessionId: activeSession, update: {
+        sessionUpdate: 'plan', entries: [null]
+      } } });
+      return;
+    }
     send({ method: 'session/update', params: { sessionId: activeSession, update: {
       sessionUpdate: 'agent_message_chunk', messageId: 'answer', content: { type: 'text', text: text.includes('SYSTEM') ? 'Hel' : 'New' }
     } } });
@@ -113,6 +123,20 @@ afterEach(async () => {
 });
 
 describe('ACP provider', () => {
+  it('quotes Windows command shims without exposing arguments to cmd.exe', () => {
+    expect(
+      windowsShimCommand('C:\\Program Files\\agent.cmd', ['--name', 'A&B', '100%', 'say "hi"']),
+    ).toEqual({
+      command: 'cmd.exe',
+      args: [
+        '/d',
+        '/s',
+        '/c',
+        '"C:\\Program^ Files\\agent.cmd ^^^"--name^^^" ^^^"A^^^&B^^^" ^^^"100^^^%^^^" ^^^"say^^^ \\^^^"hi\\^^^"^^^""',
+      ],
+    });
+  });
+
   it('maps messages, plans, tools and permission requests into panel events', async () => {
     const { cwd, provider } = await setup();
     const events: ProviderEvent[] = [];
@@ -164,6 +188,27 @@ describe('ACP provider', () => {
     expect(events).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: 'tool-end', ok: false })]),
     );
+  });
+
+  it('starts a new session when loading the saved session fails', async () => {
+    const { cwd, provider } = await setup();
+    const events: ProviderEvent[] = [];
+
+    await provider.run(options(cwd, events, 'rejected-session', async () => false));
+
+    expect(events[0]).toEqual({ type: 'session-id', id: 'fake-session' });
+    expect(events.filter((event) => event.type === 'text-delta')).toEqual([
+      expect.objectContaining({ text: 'Hel' }),
+      expect.objectContaining({ text: 'lo' }),
+    ]);
+  });
+
+  it('fails the run when the agent sends a malformed update', async () => {
+    const { cwd, provider } = await setup();
+    const runOptions = options(cwd, [], null, async () => false);
+    runOptions.prompt = 'MALFORMED';
+
+    await expect(provider.run(runOptions)).rejects.toThrow(TypeError);
   });
 
   it('sends session/cancel when the panel stops a turn', async () => {

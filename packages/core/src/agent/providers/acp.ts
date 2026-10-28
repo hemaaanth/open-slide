@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import type { OpenSlideAcpProviderConfig } from '../../config.ts';
+import { findOnPath } from '../detect.ts';
 import { extractQuestionBlock, TEXT_QUESTIONS_INSTRUCTION } from '../prompt.ts';
 import { type AgentProvider, clipDetail, type ProviderRunOptions } from '../provider.ts';
 import { newId } from '../store.ts';
@@ -22,6 +23,26 @@ type PendingRequest = {
   reject: (reason: Error) => void;
 };
 
+const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
+
+function escapeCmdCommand(command: string) {
+  return command.replace(CMD_META_CHARS, '^$1');
+}
+
+function escapeCmdArgument(argument: string) {
+  let escaped = argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1');
+  escaped = `"${escaped}"`.replace(CMD_META_CHARS, '^$1');
+  return escaped.replace(CMD_META_CHARS, '^$1');
+}
+
+export function windowsShimCommand(command: string, args: string[], comspec = 'cmd.exe') {
+  const commandLine = [escapeCmdCommand(command), ...args.map(escapeCmdArgument)].join(' ');
+  return {
+    command: comspec,
+    args: ['/d', '/s', '/c', `"${commandLine}"`],
+  };
+}
+
 export function createAcpProvider(
   config: OpenSlideAcpProviderConfig,
   coreVersion: string,
@@ -39,9 +60,15 @@ export function createAcpProvider(
     },
     async run(opts: ProviderRunOptions): Promise<void> {
       if (opts.signal.aborted) return;
-      const child = spawn(config.command, config.args ?? [], {
+      const resolvedCommand = findOnPath(config.command) ?? config.command;
+      const isWindowsShim = process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(resolvedCommand);
+      const childCommand = isWindowsShim
+        ? windowsShimCommand(resolvedCommand, config.args ?? [], process.env.ComSpec)
+        : { command: resolvedCommand, args: config.args ?? [] };
+      const child = spawn(childCommand.command, childCommand.args, {
         cwd: opts.cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
+        windowsVerbatimArguments: isWindowsShim,
         windowsHide: true,
       });
       const pending = new Map<number, PendingRequest>();
@@ -197,18 +224,23 @@ export function createAcpProvider(
           else request.resolve(message.result ?? {});
           return;
         }
-        if (message.method === 'session/request_permission' && message.id !== undefined) {
-          handlePermission(message);
-          return;
+        try {
+          if (message.method === 'session/request_permission' && message.id !== undefined) {
+            handlePermission(message);
+            return;
+          }
+          if (message.method && message.id !== undefined) {
+            send({
+              id: message.id,
+              error: { code: -32601, message: `Unsupported ACP method: ${message.method}` },
+            });
+            return;
+          }
+          if (message.method === 'session/update') handleUpdate(message.params ?? {});
+        } catch (error) {
+          fail(error instanceof Error ? error : new Error(String(error)));
+          child.kill();
         }
-        if (message.method && message.id !== undefined) {
-          send({
-            id: message.id,
-            error: { code: -32601, message: `Unsupported ACP method: ${message.method}` },
-          });
-          return;
-        }
-        if (message.method === 'session/update') handleUpdate(message.params ?? {});
       });
 
       try {
@@ -227,11 +259,17 @@ export function createAcpProvider(
           replaying = true;
           try {
             await call('session/load', { sessionId, cwd: opts.cwd, mcpServers: [] });
+            loaded = true;
+          } catch (error) {
+            if (opts.signal.aborted || child.exitCode !== null || child.signalCode !== null) {
+              throw error;
+            }
+            sessionId = null;
           } finally {
             replaying = false;
           }
-          loaded = true;
-        } else {
+        }
+        if (!loaded) {
           const session = await call('session/new', { cwd: opts.cwd, mcpServers: [] });
           if (typeof session.sessionId !== 'string') {
             throw new Error('ACP agent did not return a session ID');

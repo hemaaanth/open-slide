@@ -171,7 +171,7 @@ function ProviderCard({
               ? format(t.agent.acpMissing, { command: provider.cliCommand })
               : format(t.agent.cliHint, { name: provider.name })}
           </p>
-          {CLI_INSTALL[provider.id] && (
+          {provider.type !== 'acp' && CLI_INSTALL[provider.id] && (
             <code className="block overflow-x-auto rounded-[5px] bg-muted px-2 py-1.5 font-mono text-[11px] whitespace-nowrap select-all">
               {CLI_INSTALL[provider.id]}
             </code>
