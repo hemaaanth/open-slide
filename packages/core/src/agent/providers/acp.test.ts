@@ -132,9 +132,10 @@ describe('ACP provider', () => {
         '/d',
         '/s',
         '/c',
-        '"C:\\Program^ Files\\agent.cmd ^^^"--name^^^" ^^^"A^^^&B^^^" ^^^"100^^^%^^^" ^^^"say^^^ \\^^^"hi\\^^^"^^^""',
+        '""C:\\Program Files\\agent.cmd" ^^^"--name^^^" ^^^"A^^^&B^^^" ^^^"100^^^%^^^" ^^^"say^^^ \\^^^"hi\\^^^"^^^""',
       ],
     });
+    expect(windowsShimCommand('C:\\bin\\agent.cmd', []).args[3]).toBe('"C:\\bin\\agent.cmd"');
   });
 
   it('maps messages, plans, tools and permission requests into panel events', async () => {

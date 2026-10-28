@@ -26,6 +26,7 @@ type PendingRequest = {
 const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
 
 function escapeCmdCommand(command: string) {
+  if (command.includes(' ')) return `"${command}"`;
   return command.replace(CMD_META_CHARS, '^$1');
 }
 
